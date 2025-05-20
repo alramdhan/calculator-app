@@ -28,6 +28,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import kalkulator.composeapp.generated.resources.Res
 import kalkulator.composeapp.generated.resources.ic_add
 import kalkulator.composeapp.generated.resources.ic_arrow_delete
@@ -44,13 +45,16 @@ import org.jetbrains.compose.ui.tooling.preview.Preview
 import org.logixphere.kalkulator.data.Operator
 import org.logixphere.kalkulator.ui.CalculatorTheme
 import org.logixphere.kalkulator.ui.colorDark
+import org.logixphere.kalkulator.utils.PreferencesFactory
+import org.logixphere.kalkulator.viewmodel.CalculatorViewModel
 
 @Composable
 @Preview
-fun CalculatorApp() {
-    var isDarkTheme by remember { mutableStateOf(false) }
-    var display by remember { mutableStateOf("0") }
-    var result by remember { mutableStateOf("0") }
+fun CalculatorApp(viewModel: CalculatorViewModel = viewModel { CalculatorViewModel() }) {
+    val preferences = PreferencesFactory.getInstance()
+    var isDarkTheme by remember { mutableStateOf(preferences.isDarkThemeEnabled()) }
+    val display = viewModel.display.collectAsState()
+    val result = viewModel.result.collectAsState()
 
     CalculatorTheme(
         darkTheme = isDarkTheme
@@ -64,7 +68,7 @@ fun CalculatorApp() {
                     Column(
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(16.dp),
+                            .padding(vertical = getPadding(), horizontal = 16.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
@@ -72,12 +76,13 @@ fun CalculatorApp() {
                             isDarkTheme = isDarkTheme,
                             onToggle = {
                                 isDarkTheme = it
+                                preferences.setDarkThemeEnabled(isEnabled = it)
                             }
                         )
 
                         Text(
                             modifier = Modifier.weight(1f),
-                            text = display,
+                            text = display.value,
                             style = MaterialTheme.typography.titleMedium,
                             textAlign = TextAlign.End,
                             color = MaterialTheme.colorScheme.onPrimary,
@@ -85,7 +90,7 @@ fun CalculatorApp() {
                         )
                         Text(
                             modifier = Modifier.weight(1f),
-                            text = result,
+                            text = result.value,
                             style = MaterialTheme.typography.titleMedium,
                             textAlign = TextAlign.End,
                             color = MaterialTheme.colorScheme.onPrimary,
@@ -95,7 +100,7 @@ fun CalculatorApp() {
 
                         Spacer(modifier = Modifier.height(16.dp))
 
-                        NumberPad()
+                        NumberPad(viewModel = viewModel)
                     }
                 }
             )
@@ -104,7 +109,7 @@ fun CalculatorApp() {
 }
 
 @Composable
-fun NumberPad(modifier: Modifier = Modifier) {
+fun NumberPad(modifier: Modifier = Modifier, viewModel: CalculatorViewModel) {
     val buttons = listOf(
         listOf("C", Operator.CHANGE, Operator.MODULO, Operator.DIVIDE),
         listOf("7", "8", "9", Operator.MULTIPLY),
@@ -128,14 +133,26 @@ fun NumberPad(modifier: Modifier = Modifier) {
                             NumberButton(
                                 modifier = Modifier.weight(1f),
                                 number = item,
-                                onClick = {}
+                                onClick = {
+                                    when(item) {
+                                        "C" -> viewModel.onClearClick()
+                                        else -> viewModel.onNumberClick(number = item)
+                                    }
+                                }
                             )
                         }
                         is Operator -> {
                             OperatorButton(
                                 modifier = Modifier.weight(1f),
                                 operator = item,
-                                onClick = {}
+                                onClick = {
+                                    when(item) {
+                                        Operator.CHANGE -> viewModel.onToggleSignClick()
+                                        Operator.EQUALS -> viewModel.onEqualsClick()
+                                        Operator.DELETE -> viewModel.onBackspaceClick()
+                                        else -> viewModel.onOperatorClick(operator = item)
+                                    }
+                                }
                             )
                         }
                     }

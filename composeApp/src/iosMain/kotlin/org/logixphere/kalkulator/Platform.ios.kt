@@ -1,5 +1,7 @@
 package org.logixphere.kalkulator
 
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import platform.UIKit.UIDevice
 
 class IOSPlatform: Platform {
@@ -7,3 +9,5 @@ class IOSPlatform: Platform {
 }
 
 actual fun getPlatform(): Platform = IOSPlatform()
+
+actual fun getPadding(): Dp = 48.dp
